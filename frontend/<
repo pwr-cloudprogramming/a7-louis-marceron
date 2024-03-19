@@ -5,11 +5,9 @@
 	const game = new TicTacToe();
 	let player1Score = 0;
 	let player2Score = 0;
-	let gameIsOver = false;
 
 	let board = game.boardWithXandO;
 	let currentPlayer = game.currentPlayer.mark;
-	let gameStatus = game.gameStatus;
 
 	const handlePlayTurn = (event: CustomEvent) => {
 		// TODO handle errors
@@ -17,25 +15,12 @@
 
 		if (game.gameStatus === GameStatus.player1Wins) {
 			player1Score++;
-			gameIsOver = true;
 		} else if (game.gameStatus === GameStatus.player2Wins) {
 			player2Score++;
-			gameIsOver = true;
-		} else if (game.gameStatus === GameStatus.draw) {
-			gameIsOver = true;
 		}
 
 		board = game.boardWithXandO;
 		currentPlayer = game.currentPlayer.mark;
-		gameStatus = game.gameStatus;
-	};
-
-	const handleReset = () => {
-		game.reset();
-		board = game.boardWithXandO;
-		currentPlayer = game.currentPlayer.mark;
-		gameStatus = game.gameStatus;
-		gameIsOver = false;
 	};
 </script>
 
@@ -44,25 +29,12 @@
 </svelte:head>
 
 <div id="board">
-	<Board {gameIsOver} squares={board} {currentPlayer} on:playTurn={handlePlayTurn} />
+	<Board squares={board} {currentPlayer} on:playTurn={handlePlayTurn} />
 </div>
 <div id="players-bar">
 	<p class="player">{game.player1.name} - {player1Score}</p>
 	<p class="player">{player2Score} - {game.player2.name}</p>
 </div>
-
-{#if gameStatus === GameStatus.player1Wins}
-	<p>Player 1 wins!</p>
-{/if}
-{#if gameStatus === GameStatus.player2Wins}
-	<p>Player 2 wins!</p>
-{/if}
-{#if gameStatus === GameStatus.draw}
-	<p>It's a draw!</p>
-{/if}
-{#if gameStatus !== GameStatus.inProgress}
-	<button on:click={handleReset}>Play again</button>
-{/if}
 
 <style>
 	#board {
@@ -76,6 +48,7 @@
 		display: flex;
 		justify-content: space-between;
 		width: 100%;
+		/* align-self: flex-end; */
 		align-self: self-end;
 	}
 </style>

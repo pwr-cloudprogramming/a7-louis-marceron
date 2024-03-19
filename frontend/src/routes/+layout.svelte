@@ -1,10 +1,9 @@
 <script>
-	import './styles.css';
-	import Header from './Header.svelte';
+	import './reset.css';
 </script>
 
 <div class="app">
-	<Header />
+	<a href="/">Home</a>
 	<main>
 		<slot />
 	</main>
@@ -15,16 +14,16 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
+		background-color: black;
 	}
 
 	main {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+		align-items: center;
+		justify-content: space-evenly;
 		padding: 1rem;
-		width: 100%;
-		max-width: 64rem;
-		margin: 0 auto;
-		box-sizing: border-box;
+		color: white;
 	}
 </style>
