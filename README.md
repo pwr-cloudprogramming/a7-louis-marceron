@@ -1,13 +1,16 @@
-[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-718a45dd9cf7e7f842a935f5ebbe5719a5e09af4491e668f4dbf3b35d5cca122.svg)](https://classroom.github.com/online_ide?assignment_repo_id=14266693&assignment_repo_type=AssignmentRepo)
-# Template repo for Cloud Programming
+# Svelte & Bun TicTacToe
 
-This repository contains folders and placeholder files to keep the structure of CP assignments.
+This is a simple TicTacToe game made with Svelte and Bun.
 
-When you submit your solution to GitHub, put:
-
-- frontend application files into `/frontend/src`
-- backend application files into `/backend/src`
-- Dockerfile to build frontend container image into `/frontend`
-- Dockerfile to build backend container image into `/backend`
-- all other scripts to build your solution into `/build`
-
+## TODO
+- [ ] Store the ws connection in a store to avoid creating a new connection 
+every time the component is created
+- [ ] In multiplayer mode, do the action in local and then send it to the server
+for less latency
+- [ ] Join a custom room by entering the room name or a link
+- [ ] Join a custom room with a QR code
+- [ ] Deploy the application on AWS
+- [ ] Send the least amount of data from the server
+- [ ] Notifications system
+- [ ] Send ID of to the player to deal with the case of two players with the 
+same name

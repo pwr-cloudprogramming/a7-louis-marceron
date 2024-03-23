@@ -1,8 +1,8 @@
 export enum GameStatus {
-	inProgress,
-	xPlayerWin,
-	oPlayerWin,
-	draw,
+	inProgress = 'inProgress',
+	xPlayerWin = 'xPlayerWin',
+	oPlayerWin = 'oPlayerWin',
+	draw = 'draw',
 }
 
 export enum Mark {

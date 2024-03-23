@@ -4,87 +4,136 @@
 
 	let socket: WebSocket;
 	let usernameInput: HTMLInputElement;
+	let username = '';
 
-	let username = 'to replace';
-
-	// Game state
 	let inGame = false;
 	let inQueue = false;
+	let awaitingReplayConfirmation = false;
 
-	// PlayerBar
-	let player1Name = 'to replace';
-	let player2Name = 'to replace';
+	let player1Name = '';
+	let player2Name = '';
 	let player1Score = 0;
 	let player2Score = 0;
 
-	// Board
-	let squares: (string | null)[][];
-	let currentPlayer: string;
-	let gameIsOver: boolean;
+	let squares: (string | null)[][] = [];
+	let currentPlayer: string = '';
+	let gameIsOver = false;
 
-	const handleJoinQueue = (event: Event) => {
-		event.preventDefault();
-		username = usernameInput.value;
+	const initializeSocket = (username: string) => {
 		socket = new WebSocket(`ws://localhost:8080/tictactoe?username=${username}`);
+		attachSocketEventHandlers();
+	};
 
+	const attachSocketEventHandlers = () => {
 		socket.onopen = () => {
 			console.log('Connected to the socket');
 			inQueue = true;
 		};
 
 		socket.onerror = () => {
-			console.log("Couldn't connect to the socket");
+			console.error("Couldn't connect to the socket");
 			inQueue = false;
 			inGame = false;
 		};
 
 		socket.onmessage = (event) => {
-			// parse message
-			const message = JSON.parse(event.data);
-			const { type } = message;
-
-			console.log('Message:', message);
-
-			if (!type) {
-				console.log('Invalid message');
-				return;
-			}
-
-			switch (type) {
-				case 'error':
-					console.log('Error:', message.error);
-					break;
-				case 'inProgress':
-					// Game state
-					inQueue = false;
-					inGame = true;
-
-					// PlayerBar
-					player1Name = username;
-					player2Name = message.opponentName;
-
-					// Board
-					squares = message.squares;
-					currentPlayer = message.currentPlayer;
-					gameIsOver = false; // FIXME
-
-					console.log('Game found');
-					break;
-				default:
-					console.log(`${type} is not a valid message type`);
-			}
+			processSocketMessage(event);
 		};
 	};
 
+	const processSocketMessage = (event: MessageEvent) => {
+		const message = JSON.parse(event.data);
+		const { type } = message;
+
+		console.log('Message:', message);
+
+		if (!type) {
+			console.error('Invalid message');
+			return;
+		}
+
+		switch (type) {
+			case 'error':
+				console.error('Error:', message.message);
+				break;
+			case 'opponentDisconnected':
+				alert('Your opponent has disconnected. The game is over.');
+				resetGame();
+				break;
+			case 'opponentLeft':
+				alert('Your opponent has left the game.');
+				resetGame();
+				break;
+			case 'inProgress':
+			case 'gameStart':
+				inQueue = false;
+				inGame = true;
+				awaitingReplayConfirmation = false;
+				player1Name = username;
+				player2Name = message.opponentName;
+				squares = message.squares;
+				currentPlayer = message.currentPlayer;
+				gameIsOver = false;
+				break;
+			case 'xPlayerWin':
+				gameIsOver = true;
+				if (username === player1Name) player1Score++;
+				else player2Score++;
+				alert('X wins!');
+				break;
+			case 'oPlayerWin':
+				gameIsOver = true;
+				if (username === player2Name) player1Score++;
+				else player2Score++;
+				alert('O wins!');
+				break;
+			case 'draw':
+				gameIsOver = true;
+				alert("It's a draw!");
+				break;
+			default:
+				console.warn(`${type} is not a valid message type`);
+		}
+	};
+
+	const handleJoinQueue = (event: Event) => {
+		event.preventDefault();
+		username = usernameInput.value.trim();
+		if (username) {
+			initializeSocket(username);
+		}
+	};
+
 	const handlePlayTurn = (event: CustomEvent) => {
-		const { row, column } = event.detail;
-		socket.send(JSON.stringify({ type: 'playTurn', x: row, y: column }));
+		if (gameIsOver && !awaitingReplayConfirmation) {
+			const wantToReplay = confirm('Game over. Do you want to play again?');
+			if (wantToReplay) {
+				socket.send(JSON.stringify({ type: 'replayGame', wantsReplay: true }));
+				awaitingReplayConfirmation = true;
+			} else {
+				socket.send(JSON.stringify({ type: 'leaveGame' }));
+				resetGame();
+			}
+		} else if (!gameIsOver) {
+			const { row, column } = event.detail;
+			socket.send(JSON.stringify({ type: 'playTurn', x: row, y: column }));
+		}
+	};
+
+	const resetGame = () => {
+		inGame = false;
+		inQueue = false;
+		awaitingReplayConfirmation = false;
+		gameIsOver = false;
+		player1Name = '';
+		player2Name = '';
+		squares = [];
+		currentPlayer = '';
 	};
 </script>
 
 {#if inQueue}
 	<p>Waiting for an opponent...</p>
-	<!-- <button>Cancel</button> -->
 {:else if inGame}
 	<Board {squares} {currentPlayer} {gameIsOver} on:playTurn={handlePlayTurn} />
 	<PlayersBar {player1Name} {player2Name} {player1Score} {player2Score} />
@@ -97,15 +146,10 @@
 {/if}
 
 <style>
-	input {
-		color: white;
-	}
-
+	input,
 	button {
 		color: white;
-	}
-
-	input {
 		border: 1px solid white;
 	}
 </style>
+
