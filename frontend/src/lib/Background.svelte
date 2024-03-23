@@ -1,5 +1,4 @@
 <div id="background">
-	<div id="white-circle"></div>
 	<div id="text-blocks">
 		<div class="text-block">
 			제명하려면 국회재적의원 3분의 2 이상의 찬성이 있어야 한다.<br />모든 국민은 자기의 행위 친족의
@@ -152,26 +151,10 @@
 		position: relative;
 		z-index: -1;
 	}
-
-	#white-circle {
-		width: 640px;
-		height: 640px;
-		left: 320px;
-		top: 96px;
-		position: absolute;
-		background: white;
-		box-shadow: 600px 600px 600px;
-		border-radius: 9999px;
-		filter: blur(600px);
-	}
-
 	#text-blocks {
-		/* left: -254px; */
-		/* top: -13688px; */
 		position: absolute;
 		justify-content: flex-start;
 		align-items: flex-start;
-		/* gap: 10px; */
 		display: inline-flex;
 		background-color: black;
 	}

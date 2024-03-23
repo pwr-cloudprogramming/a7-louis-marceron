@@ -1,4 +1,29 @@
-<script>
+<script lang="ts">
+	import { onMount } from 'svelte';
+
+	let socket: WebSocket;
+
+	onMount(() => {
+		socket = new WebSocket('ws://localhost:8080/online');
+
+		socket.onopen = (_event) => {
+			console.log('Socket opened!');
+			socket.send('Hello server!');
+			socket.send(JSON.stringify({ message: 'after it is open' }));
+		};
+
+		socket.onerror = (_event) => {
+			console.log("Couldn't connect to the socket");
+		};
+
+		console.log('Before it is open');
+		// socket.send(JSON.stringify({ message: 'before it is open' }));
+	});
+
+	const handleOnPress = () => {
+		console.log('sending messagr....');
+		socket.send(JSON.stringify({ message: 'haahhahah' }));
+	};
 </script>
 
 <svelte:head>
@@ -13,6 +38,7 @@
 		<a href="/multiplayer">Online</a>
 	</nav>
 </section>
+<button on:click={handleOnPress}>WS request</button>
 
 <style>
 	section {

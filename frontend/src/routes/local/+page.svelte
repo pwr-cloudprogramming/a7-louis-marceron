@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { GameStatus, TicTacToe } from './tictactoe';
 	import Board from '$lib/Board.svelte';
+	import PlayersBar from '$lib/PlayersBar.svelte';
 
 	const game = new TicTacToe();
 	let player1Score = 0;
 	let player2Score = 0;
 	let gameIsOver = false;
 
-	let board = game.boardWithXandO;
+	let squares = game.boardWithXandO;
 	let currentPlayer = game.currentPlayer.mark;
 	let gameStatus = game.gameStatus;
 
@@ -25,14 +26,14 @@
 			gameIsOver = true;
 		}
 
-		board = game.boardWithXandO;
+		squares = game.boardWithXandO;
 		currentPlayer = game.currentPlayer.mark;
 		gameStatus = game.gameStatus;
 	};
 
 	const handleReset = () => {
 		game.reset();
-		board = game.boardWithXandO;
+		squares = game.boardWithXandO;
 		currentPlayer = game.currentPlayer.mark;
 		gameStatus = game.gameStatus;
 		gameIsOver = false;
@@ -44,12 +45,12 @@
 </svelte:head>
 
 <div id="board">
-	<Board {gameIsOver} squares={board} {currentPlayer} on:playTurn={handlePlayTurn} />
+	<Board {gameIsOver} {squares} {currentPlayer} on:playTurn={handlePlayTurn} />
 </div>
-<div id="players-bar">
-	<p class="player">{game.player1.name} - {player1Score}</p>
-	<p class="player">{player2Score} - {game.player2.name}</p>
-</div>
+
+{#if gameStatus === GameStatus.inProgress}
+	<p>It's {currentPlayer}'s turn</p>
+{/if}
 
 {#if gameStatus === GameStatus.player1Wins}
 	<p>Player 1 wins!</p>
@@ -64,18 +65,13 @@
 	<button on:click={handleReset}>Play again</button>
 {/if}
 
+<PlayersBar {player1Score} {player2Score} />
+
 <style>
 	#board {
 		display: flex;
 		flex-grow: 1;
 		justify-content: center;
 		align-items: center;
-	}
-
-	#players-bar {
-		display: flex;
-		justify-content: space-between;
-		width: 100%;
-		align-self: self-end;
 	}
 </style>
