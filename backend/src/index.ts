@@ -148,7 +148,7 @@ function notifyPlayersOfGameStart(player1: User, player2: User, server: Server) 
     type: player1.room!.game.gameStatus,
     opponentName: player2.username,
     mark: 'X',
-    currentPlayer: player1.username,
+    isCurrentPlayer: true,
     // FIXME
     squares: player1.room!.game.board
   }));
@@ -158,7 +158,7 @@ function notifyPlayersOfGameStart(player1: User, player2: User, server: Server) 
     type: player2.room!.game.gameStatus,
     opponentName: player1.username,
     mark: 'O',
-    currentPlayer: player1.username,
+    isCurrentPlayer: false,
     // FIXME
     squares: player2.room!.game.board
   }));
@@ -214,7 +214,7 @@ function updatePlayersAfterTurn(ws: ServerWebSocket<User>, server: Server) {
     type: gameStatus,
     opponentName: opponent.username,
     mark: user.room.mark,
-    currentPlayer: opponent.username,
+    isCurrentPlayer: false,
     squares: board,
   }));
 
@@ -222,7 +222,7 @@ function updatePlayersAfterTurn(ws: ServerWebSocket<User>, server: Server) {
     type: gameStatus,
     opponentName: user.username,
     mark: user.room.mark === Mark.X ? Mark.O : Mark.X,
-    currentPlayer: user.username,
+    isCurrentPlayer: true,
     squares: board,
   }));
 }

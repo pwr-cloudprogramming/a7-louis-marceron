@@ -45,7 +45,7 @@
 </svelte:head>
 
 <div id="board">
-	<Board {gameIsOver} {squares} {currentPlayer} on:playTurn={handlePlayTurn} />
+	<Board {gameIsOver} {squares} isCurrentPlayer={currentPlayer} on:playTurn={handlePlayTurn} />
 </div>
 
 {#if gameStatus === GameStatus.inProgress}

@@ -16,8 +16,9 @@
 	let player2Score = 0;
 
 	let squares: (string | null)[][] = [];
-	let currentPlayer: string = '';
-	let gameIsOver = false;
+	let canPlay: boolean;
+	let gameIsOver: boolean = false;
+	let mark: string;
 
 	const initializeSocket = (username: string) => {
 		socket = new WebSocket(`ws://localhost:8080/tictactoe?username=${username}`);
@@ -72,28 +73,33 @@
 				player1Name = username;
 				player2Name = message.opponentName;
 				squares = message.squares;
-				currentPlayer = message.currentPlayer;
-				gameIsOver = false;
+				mark = message.mark;
+				canPlay = message.isCurrentPlayer;
 				break;
+			// FIXME can use mark
 			case 'xPlayerWin':
 				gameIsOver = true;
 				if (username === player1Name) player1Score++;
 				else player2Score++;
+				squares = message.squares;
 				alert('X wins!');
 				break;
 			case 'oPlayerWin':
 				gameIsOver = true;
 				if (username === player2Name) player1Score++;
 				else player2Score++;
+				squares = message.squares;
 				alert('O wins!');
 				break;
 			case 'draw':
 				gameIsOver = true;
+				squares = message.squares;
 				alert("It's a draw!");
 				break;
 			default:
 				console.warn(`${type} is not a valid message type`);
 		}
+		console.log(canPlay);
 	};
 
 	const handleJoinQueue = (event: Event) => {
@@ -128,14 +134,13 @@
 		player1Name = '';
 		player2Name = '';
 		squares = [];
-		currentPlayer = '';
 	};
 </script>
 
 {#if inQueue}
 	<p>Waiting for an opponent...</p>
 {:else if inGame}
-	<Board {squares} {currentPlayer} {gameIsOver} on:playTurn={handlePlayTurn} />
+	<Board {squares} {canPlay} {gameIsOver} on:playTurn={handlePlayTurn} />
 	<PlayersBar {player1Name} {player2Name} {player1Score} {player2Score} />
 {:else}
 	<form>
@@ -152,4 +157,3 @@
 		border: 1px solid white;
 	}
 </style>
-
