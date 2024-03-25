@@ -1,5 +1,19 @@
 import { Server, ServerWebSocket } from 'bun';
-import { TicTacToe, Mark } from "./tictactoe";
+import { TicTacToe } from "./tictactoe";
+import {
+  ClientMessageType,
+  PlayTurnMessageData,
+  ClientMessage,
+  ServerMessageType,
+  GameUpdateMessageData,
+  ErrorMessageData,
+  Mark,
+  GameStatus,
+} from '../../api';
+
+const PORT: number = 8080;
+const MAX_USERNAME_LENGTH = 16;
+const MIN_USERNAME_LENGTH = 2;
 
 type User = {
   id: string;
@@ -7,15 +21,11 @@ type User = {
   username: string;
   room?: {
     opponent: User;
-    mark: Mark;
+    myMark: Mark;
     game: TicTacToe;
     wantsReplay?: boolean;
   };
 };
-
-const PORT: number = 8080;
-const MAX_USERNAME_LENGTH = 16;
-const MIN_USERNAME_LENGTH = 2;
 
 const queue: User[] = [];
 
@@ -31,28 +41,29 @@ const server = Bun.serve<User>({
 
   websocket: {
     open(ws) {
+      console.log('Client connected');
       ws.subscribe(ws.data.id);
-      enqueuePlayer(ws);
     },
 
     message(ws, message) {
-      const data = JSON.parse(message as string);
+      const data: ClientMessage = JSON.parse(message as string);
       if (!data.type) {
-        return sendError(ws, 'Invalid message type');
+        return sendError(ws, ErrorMessageData.InvalidMessage);
       }
 
       switch (data.type) {
-        case 'joinQueue':
+        case ClientMessageType.JoinQueue:
           enqueuePlayer(ws);
           break;
-        case 'playTurn':
-          handlePlayTurn(ws, data, server);
+        case ClientMessageType.PlayTurn:
+          const playTurnData = data.data as PlayTurnMessageData;
+          handlePlayTurn(ws, playTurnData, server);
           break;
-        case 'leaveGame':
+        case ClientMessageType.LeaveGame:
           handleLeaveGame(ws, server);
           break;
-        case 'replayGame':
-          handleReplayGame(ws, data, server);
+        case ClientMessageType.ReplayGame:
+          handleReplayGame(ws, server);
           break;
       }
     },
@@ -65,26 +76,26 @@ const server = Bun.serve<User>({
 
 function enqueuePlayer(ws: ServerWebSocket<User>) {
   queue.push(ws.data);
+  console.log('Player enqueued: ', queue.length);
   tryPairingPlayers(server);
 }
 
 function handleLeaveGame(ws: ServerWebSocket<User>, server: Server) {
   if (ws.data.room) {
     const opponent = ws.data.room.opponent;
-    server.publish(opponent.id, JSON.stringify({ type: 'opponentLeft' }));
+    server.publish(opponent.id, JSON.stringify({ type: ServerMessageType.OpponentDisconnected }));
     delete ws.data.room;
     delete opponent.room;
   }
 }
 
-function handleReplayGame(ws: ServerWebSocket<User>, data: any, server: Server) {
+function handleReplayGame(ws: ServerWebSocket<User>, server: Server) {
   const user = ws.data;
   if (user.room) {
-    user.room.wantsReplay = data.wantsReplay;
+    user.room.wantsReplay = true; // Assuming replay request means they want to replay
 
     const opponent = user.room.opponent;
     if (opponent.room && opponent.room.wantsReplay) {
-      // Both players want to replay, so we start a new game.
       initializeGame(user, opponent, server);
     }
   }
@@ -129,13 +140,13 @@ function initializeGame(player1: User, player2: User, server: Server) {
 
   player1.room = {
     opponent: player2,
-    mark: Mark.X,
+    myMark: Mark.X,
     game,
   };
 
   player2.room = {
     opponent: player1,
-    mark: Mark.O,
+    myMark: Mark.O,
     game,
   };
 
@@ -143,112 +154,106 @@ function initializeGame(player1: User, player2: User, server: Server) {
 }
 
 function notifyPlayersOfGameStart(player1: User, player2: User, server: Server) {
-  server.publish(player1.id, JSON.stringify({
-    // FIXME
-    type: player1.room!.game.gameStatus,
-    opponentName: player2.username,
-    mark: 'X',
-    isCurrentPlayer: true,
-    // FIXME
-    squares: player1.room!.game.board
-  }));
+  if (!player1.room) {
+    return;
+  }
 
-  server.publish(player2.id, JSON.stringify({
-    // FIXME
-    type: player2.room!.game.gameStatus,
+  const board = player1.room.game.board;
+
+  const gameUpdateForPlayer1: GameUpdateMessageData = {
+    type: GameStatus.InProgress,
+    opponentName: player2.username,
+    myMark: Mark.X,
+    isCurrentPlayer: true,
+    squares: board
+  };
+
+  const gameUpdateForPlayer2: GameUpdateMessageData = {
+    type: GameStatus.InProgress,
     opponentName: player1.username,
-    mark: 'O',
+    myMark: Mark.O,
     isCurrentPlayer: false,
-    // FIXME
-    squares: player2.room!.game.board
-  }));
+    squares: board
+  };
+
+  server.publish(player1.id, JSON.stringify({ type: ServerMessageType.GameUpdate, data: gameUpdateForPlayer1 }));
+  server.publish(player2.id, JSON.stringify({ type: ServerMessageType.GameUpdate, data: gameUpdateForPlayer2 }));
 }
 
-function handlePlayTurn(ws: ServerWebSocket<User>, data: any, server: Server) {
+function handlePlayTurn(ws: ServerWebSocket<User>, playTurnData: PlayTurnMessageData, server: Server) {
   if (!ws.data.room) {
-    return sendError(ws, 'You are not in a room');
+    return sendError(ws, ErrorMessageData.InvalidMessage);
   }
 
-  const { x, y } = validateCoordinates(data.x, data.y);
-  if (x === null || y === null) {
-    return sendError(ws, 'Invalid coordinates');
-  }
-
+  const { x, y } = playTurnData;
   const game = ws.data.room.game;
-  if (game.currentMark !== ws.data.room.mark) {
-    return sendError(ws, "It's not your turn");
+
+  if (game.currentMark !== ws.data.room.myMark) {
+    return sendError(ws, ErrorMessageData.NotYourTurn);
   }
 
   try {
     game.playTurn(x, y);
     updatePlayersAfterTurn(ws, server);
-  } catch (error: any) {
-    sendError(ws, error.message);
+  } catch (error) {
+    sendError(ws, ErrorMessageData.InvalidCoordinates);
   }
-}
-
-function validateCoordinates(x: any, y: any): { x: number | null, y: number | null } {
-  let parsedX = parseInt(x);
-  let parsedY = parseInt(y);
-  if (isNaN(parsedX) || isNaN(parsedY) || parsedX < 0 || parsedX > 2 || parsedY < 0 || parsedY > 2) {
-    return { x: null, y: null };
-  }
-  return { x: parsedX, y: parsedY };
 }
 
 function updatePlayersAfterTurn(ws: ServerWebSocket<User>, server: Server) {
   const user = ws.data;
-
   if (!user.room) {
-    console.error('Attempted to update a game for a user without a room.');
-    sendError(ws, 'Server error');
-    return;
+    return sendError(ws, ErrorMessageData.ServerError);
   }
 
-  const gameStatus = user.room.game.gameStatus;
+  const game = user.room.game;
+  const gameStatus = game.gameStatus;
+  const board = game.board;
+
   const opponent = user.room.opponent;
-  const board = user.room.game.board;
+  if (!opponent.room) {
+    return sendError(ws, ErrorMessageData.ServerError);
+  }
 
-  // Notify the current player and the opponent about the updated game state
-  server.publish(user.id, JSON.stringify({
-    type: gameStatus,
+  // Prepare the game update messages for both players
+  const gameUpdateForUser: GameUpdateMessageData = {
+    type: gameStatus as unknown as GameStatus,
     opponentName: opponent.username,
-    mark: user.room.mark,
-    isCurrentPlayer: false,
+    myMark: user.room.myMark,
+    isCurrentPlayer: game.currentMark === user.room.myMark,
     squares: board,
-  }));
+  };
 
-  server.publish(opponent.id, JSON.stringify({
-    type: gameStatus,
+  const gameUpdateForOpponent: GameUpdateMessageData = {
+    type: gameStatus as unknown as GameStatus,
     opponentName: user.username,
-    mark: user.room.mark === Mark.X ? Mark.O : Mark.X,
-    isCurrentPlayer: true,
+    myMark: opponent.room.myMark,
+    isCurrentPlayer: game.currentMark === opponent.room.myMark,
     squares: board,
-  }));
+  };
+
+  // Send the game state updates to both players
+  server.publish(user.id, JSON.stringify({ type: ServerMessageType.GameUpdate, data: gameUpdateForUser }));
+  server.publish(opponent.id, JSON.stringify({ type: ServerMessageType.GameUpdate, data: gameUpdateForOpponent }));
 }
 
-function sendError(ws: ServerWebSocket<User>, message: string) {
-  ws.send(JSON.stringify({ type: 'error', message }));
+function sendError(ws: ServerWebSocket<User>, error: ErrorMessageData) {
+  ws.send(JSON.stringify({ type: ServerMessageType.Error, data: error }));
 }
 
 function handlePlayerDisconnection(ws: ServerWebSocket<User>) {
-  // If a player disconnects, remove them from the queue if they're in it
+  if (ws.data.room) {
+    const opponent = ws.data.room.opponent;
+    server.publish(opponent.id, JSON.stringify({ type: ServerMessageType.OpponentDisconnected }));
+    delete ws.data.room;
+    delete opponent.room;
+  }
+
   const index = queue.findIndex(user => user.id === ws.data.id);
   if (index !== -1) {
     queue.splice(index, 1);
   }
-
-  // If the player was in a game, handle the disconnection appropriately
-  if (ws.data.room) {
-    const opponent = ws.data.room.opponent;
-    server.publish(opponent.id, JSON.stringify({
-      type: 'opponentDisconnected',
-    }));
-
-    // Clean up the room object for both players
-    delete ws.data.room;
-    delete opponent.room;
-  }
 }
 
 console.log(`Listening on ${server.url}`);
+

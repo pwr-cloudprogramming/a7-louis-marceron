@@ -1,6 +1,16 @@
 <script lang="ts">
-	import Board from '$lib/Board.svelte';
-	import PlayersBar from '$lib/PlayersBar.svelte';
+	import Board from '$lib/components/Board.svelte';
+	import PlayersBar from '$lib/components/PlayersBar.svelte';
+	import ReplayButtons from './ReplayButtons.svelte';
+	import {
+		type ServerMessage,
+		type ClientMessage,
+		ClientMessageType,
+		ServerMessageType,
+		GameStatus,
+		Mark,
+		type GameUpdateMessageData
+	} from '../../../../api';
 
 	let socket: WebSocket;
 	let usernameInput: HTMLInputElement;
@@ -15,10 +25,10 @@
 	let player1Score = 0;
 	let player2Score = 0;
 
-	let squares: (string | null)[][] = [];
+	let squares: (Mark | null)[][] = [];
 	let canPlay: boolean;
 	let gameIsOver: boolean = false;
-	let mark: string;
+	let myMark: Mark;
 
 	const initializeSocket = (username: string) => {
 		socket = new WebSocket(`ws://localhost:8080/tictactoe?username=${username}`);
@@ -29,6 +39,7 @@
 		socket.onopen = () => {
 			console.log('Connected to the socket');
 			inQueue = true;
+			socket.send(JSON.stringify({ type: ClientMessageType.JoinQueue }));
 		};
 
 		socket.onerror = () => {
@@ -38,68 +49,44 @@
 		};
 
 		socket.onmessage = (event) => {
-			processSocketMessage(event);
+			processSocketMessage(JSON.parse(event.data));
 		};
 	};
 
-	const processSocketMessage = (event: MessageEvent) => {
-		const message = JSON.parse(event.data);
-		const { type } = message;
+	const processSocketMessage = (message: ServerMessage) => {
+		console.log('Received message:', message);
 
-		console.log('Message:', message);
-
-		if (!type) {
+		if (!message.type) {
 			console.error('Invalid message');
 			return;
 		}
 
-		switch (type) {
-			case 'error':
-				console.error('Error:', message.message);
-				break;
-			case 'opponentDisconnected':
-				alert('Your opponent has disconnected. The game is over.');
-				resetGame();
-				break;
-			case 'opponentLeft':
-				alert('Your opponent has left the game.');
-				resetGame();
-				break;
-			case 'inProgress':
-			case 'gameStart':
+		switch (message.type) {
+			case ServerMessageType.GameUpdate: {
+				const gameUpdateData = message.data as GameUpdateMessageData;
+				if (!gameUpdateData) break;
+
 				inQueue = false;
 				inGame = true;
 				awaitingReplayConfirmation = false;
 				player1Name = username;
-				player2Name = message.opponentName;
-				squares = message.squares;
-				mark = message.mark;
-				canPlay = message.isCurrentPlayer;
+				player2Name = gameUpdateData.opponentName;
+				squares = gameUpdateData.squares;
+				myMark = gameUpdateData.myMark;
+				canPlay = gameUpdateData.isCurrentPlayer;
+				gameIsOver = gameUpdateData.type !== GameStatus.InProgress;
 				break;
-			// FIXME can use mark
-			case 'xPlayerWin':
-				gameIsOver = true;
-				if (username === player1Name) player1Score++;
-				else player2Score++;
-				squares = message.squares;
-				alert('X wins!');
+			}
+			case ServerMessageType.OpponentDisconnected: {
+				alert('Your opponent has disconnected. The game is over.');
+				resetGame();
 				break;
-			case 'oPlayerWin':
-				gameIsOver = true;
-				if (username === player2Name) player1Score++;
-				else player2Score++;
-				squares = message.squares;
-				alert('O wins!');
+			}
+			case ServerMessageType.Error: {
+				alert('An error occurred: ' + message.data);
 				break;
-			case 'draw':
-				gameIsOver = true;
-				squares = message.squares;
-				alert("It's a draw!");
-				break;
-			default:
-				console.warn(`${type} is not a valid message type`);
+			}
 		}
-		console.log(canPlay);
 	};
 
 	const handleJoinQueue = (event: Event) => {
@@ -111,19 +98,25 @@
 	};
 
 	const handlePlayTurn = (event: CustomEvent) => {
-		if (gameIsOver && !awaitingReplayConfirmation) {
-			const wantToReplay = confirm('Game over. Do you want to play again?');
-			if (wantToReplay) {
-				socket.send(JSON.stringify({ type: 'replayGame', wantsReplay: true }));
-				awaitingReplayConfirmation = true;
-			} else {
-				socket.send(JSON.stringify({ type: 'leaveGame' }));
-				resetGame();
-			}
-		} else if (!gameIsOver) {
+		if (canPlay) {
 			const { row, column } = event.detail;
-			socket.send(JSON.stringify({ type: 'playTurn', x: row, y: column }));
+			socket.send(
+				JSON.stringify(<ClientMessage>{
+					type: ClientMessageType.PlayTurn,
+					data: { x: row, y: column }
+				})
+			);
 		}
+	};
+
+	const handleReplay = () => {
+		socket.send(JSON.stringify(<ClientMessage>{ type: ClientMessageType.ReplayGame }));
+		awaitingReplayConfirmation = true;
+	};
+
+	const handleLeave = () => {
+		socket.send(JSON.stringify(<ClientMessage>{ type: ClientMessageType.LeaveGame }));
+		resetGame();
 	};
 
 	const resetGame = () => {
@@ -142,6 +135,9 @@
 {:else if inGame}
 	<Board {squares} {canPlay} {gameIsOver} on:playTurn={handlePlayTurn} />
 	<PlayersBar {player1Name} {player2Name} {player1Score} {player2Score} />
+	{#if gameIsOver}
+		<ReplayButtons on:replay={handleReplay} on:leave={handleLeave} />
+	{/if}
 {:else}
 	<form>
 		<label for="username">Username:</label>
@@ -155,5 +151,19 @@
 	button {
 		color: white;
 		border: 1px solid white;
+		background-color: black;
+		padding: 10px;
+		margin: 5px;
+	}
+
+	form {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	p {
+		color: white;
+		text-align: center;
 	}
 </style>

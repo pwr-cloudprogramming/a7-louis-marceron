@@ -1,6 +1,6 @@
 <script>
-	import Background from '$lib/Background.svelte';
-	import BackgroundLightEffect from '$lib/BackgroundLightEffect.svelte';
+	import Background from '$lib/components/Background.svelte';
+	import BackgroundLightEffect from '$lib/components/BackgroundLightEffect.svelte';
 	import './reset.css';
 	import '../lib/global.css';
 </script>

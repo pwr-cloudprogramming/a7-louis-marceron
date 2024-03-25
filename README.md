@@ -14,3 +14,5 @@ for less latency
 - [ ] Notifications system
 - [ ] Send ID of to the player to deal with the case of two players with the 
 same name
+- [ ] Common folder for the server and the client for TicTacToe logic and API
+- [ ] Animations
