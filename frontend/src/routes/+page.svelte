@@ -6,13 +6,13 @@
 	onMount(() => {
 		socket = new WebSocket('ws://localhost:8080/online');
 
-		socket.onopen = (_event) => {
+		socket.onopen = () => {
 			console.log('Socket opened!');
 			socket.send('Hello server!');
 			socket.send(JSON.stringify({ message: 'after it is open' }));
 		};
 
-		socket.onerror = (_event) => {
+		socket.onerror = () => {
 			console.log("Couldn't connect to the socket");
 		};
 

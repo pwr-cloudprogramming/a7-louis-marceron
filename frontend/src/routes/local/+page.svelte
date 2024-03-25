@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { GameStatus, TicTacToe } from './tictactoe';
-	import Board from '$lib/Board.svelte';
-	import PlayersBar from '$lib/PlayersBar.svelte';
+	import Board from '$lib/components/Board.svelte';
+	import PlayersBar from '$lib/components/PlayersBar.svelte';
 
 	const game = new TicTacToe();
 	let player1Score = 0;
@@ -45,7 +45,7 @@
 </svelte:head>
 
 <div id="board">
-	<Board {gameIsOver} {squares} isCurrentPlayer={currentPlayer} on:playTurn={handlePlayTurn} />
+	<Board {gameIsOver} {squares} canPlay={true} on:playTurn={handlePlayTurn} />
 </div>
 
 {#if gameStatus === GameStatus.inProgress}
