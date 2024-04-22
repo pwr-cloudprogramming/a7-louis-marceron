@@ -20,6 +20,8 @@ COPY --from=install /temp/prod/node_modules ./frontend/node_modules
 COPY --from=prerelease /usr/src/app/api.ts ./
 COPY --from=prerelease /usr/src/app/frontend/build ./frontend/build
 
+ENV PUBLIC_BACKEND_URL=localhost
+
 WORKDIR /usr/src/app/frontend/build
 COPY --from=prerelease /usr/src/app/api.ts ./
 USER bun

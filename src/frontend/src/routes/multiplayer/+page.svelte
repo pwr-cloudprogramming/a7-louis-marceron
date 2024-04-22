@@ -12,9 +12,22 @@
 		type GameUpdateMessageData
 	} from '../../../../api';
 
+	import { onMount } from 'svelte';
+
+	// We must use dynamic imports inside onMount to avoid SSR errors
+	onMount(async () => {
+		const module = await import('$env/dynamic/public');
+		const env = module.env;
+		if (!env) {
+			console.error('Environment variables not found');
+			return;
+		}
+	});
+
 	let socket: WebSocket;
 	let usernameInput: HTMLInputElement;
 	let username = '';
+	let backendUrl: string = '';
 
 	let inGame = false;
 	let inQueue = false;
@@ -31,7 +44,7 @@
 	let myMark: Mark;
 
 	const initializeSocket = (username: string) => {
-		socket = new WebSocket(`ws://localhost:8080/tictactoe?username=${username}`);
+		socket = new WebSocket(`ws://${backendUrl}:8080/tictactoe?username=${username}`);
 		attachSocketEventHandlers();
 	};
 
