@@ -3,6 +3,7 @@
 This is a simple TicTacToe game made with Svelte and Bun.
 
 ## TODO
+- [ ] Only store the build files in the docker
 - [ ] Store the ws connection in a store to avoid creating a new connection 
 every time the component is created
 - [ ] In multiplayer mode, do the action in local and then send it to the server

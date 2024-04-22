@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "start": "node ./build/index.js",
+    "start": "bun ./build/index.js",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -33,6 +33,9 @@
   "type": "module",
   "dependencies": {
     "@nuxt/devalue": "^2.0.2",
-    "@sveltejs/adapter-auto": "^3.1.1"
+    "cookie": "^0.6.0",
+    "devalue": "^5.0.0",
+    "set-cookie-parser": "^2.6.0",
+    "svelte-adapter-bun": "^0.5.2"
   }
 }
