@@ -115,13 +115,11 @@ resource "aws_instance" "app_server" {
 
   user_data = <<-EOF
               #!/bin/bash
-              sudo apt-get update -y
-              sudo apt install -y docker.io
-              sudo apt install -y awscli
-              sudo service docker start
-              sudo usermod -aG docker $USER
-              newgrp docker
-              sudo aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725339291.dkr.ecr.us-east-1.amazonaws.com
+              apt-get update -y
+              apt install -y docker.io
+              apt install -y awscli
+              service docker start
+              aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725339291.dkr.ecr.us-east-1.amazonaws.com
               docker pull 851725339291.dkr.ecr.us-east-1.amazonaws.com/myback:v2
               docker pull 851725339291.dkr.ecr.us-east-1.amazonaws.com/myfront:v2
               docker run --restart=unless-stopped -d -p 8080:8080 851725339291.dkr.ecr.us-east-1.amazonaws.com/myback:v2
