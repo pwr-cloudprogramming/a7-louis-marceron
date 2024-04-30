@@ -116,9 +116,9 @@ resource "aws_instance" "app_server" {
   user_data = <<-EOF
               #!/bin/bash
               apt-get update -y
-              apt install -y docker.io
-              apt install -y awscli
+              apt install -y docker.io awscli
               service docker start
+              systemctl enable docker
               aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725339291.dkr.ecr.us-east-1.amazonaws.com
               docker pull 851725339291.dkr.ecr.us-east-1.amazonaws.com/myback:v2
               docker pull 851725339291.dkr.ecr.us-east-1.amazonaws.com/myfront:v2
