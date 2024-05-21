@@ -4,12 +4,12 @@ provider "aws" {
 
 variable "backend_image" {
   type    = string
-  default = "851725339291.dkr.ecr.us-east-1.amazonaws.com/myback:v2"
+  default = "851725339291.dkr.ecr.us-east-1.amazonaws.com/myback:v1"
 }
 
 variable "frontend_image" {
   type    = string
-  default = "851725339291.dkr.ecr.us-east-1.amazonaws.com/myfront:v4"
+  default = "851725339291.dkr.ecr.us-east-1.amazonaws.com/myfront:v1"
 }
 
 resource "aws_vpc" "main" {
@@ -230,9 +230,3 @@ resource "aws_ecs_service" "frontend" {
     aws_ecs_service.backend
   ]
 }
-
-output "backend_url" {
-  value     = aws_lb.main.dns_name
-  sensitive = false
-}
-
