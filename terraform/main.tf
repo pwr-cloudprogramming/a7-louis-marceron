@@ -9,7 +9,7 @@ variable "backend_image" {
 
 variable "frontend_image" {
   type    = string
-  default = "851725339291.dkr.ecr.us-east-1.amazonaws.com/myfront:v3"
+  default = "851725339291.dkr.ecr.us-east-1.amazonaws.com/myfront:v4"
 }
 
 resource "aws_vpc" "main" {
