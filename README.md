@@ -39,6 +39,7 @@ Surprises?
 - Found Terraform to be a less intimidating tool for configuring AWS infrastructure compared to using the AWS dashboard directly.
 
 ## TODO
+- [ ] Fix my terrible frontend docker file
 - [ ] Refactor user_data (it must be in a separate file + only use sudo for 
 docker commands)
 - [ ] Relaunch automatically the docker container when the EC2 instance is

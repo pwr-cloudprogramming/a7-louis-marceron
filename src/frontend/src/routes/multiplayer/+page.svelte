@@ -16,8 +16,11 @@
 
 	// We must use dynamic imports inside onMount to avoid SSR errors
 	onMount(async () => {
+		console.log('Loading environment variables...');
 		const module = await import('$env/dynamic/public');
 		const env = module.env;
+		console.log(`Backend URL: ${env.PUBLIC_BACKEND_URL}`);
+		backendUrl = env.PUBLIC_BACKEND_URL!;
 		if (!env) {
 			console.error('Environment variables not found');
 			return;
@@ -44,7 +47,9 @@
 	let myMark: Mark;
 
 	const initializeSocket = (username: string) => {
-		socket = new WebSocket(`ws://${backendUrl}:8080/tictactoe?username=${username}`);
+		console.log(backendUrl);
+		console.log(`ws://${backendUrl}:8080/tictactoe?username=${username}`);
+		socket = new WebSocket(`ws://${backendUrl}/tictactoe?username=${username}`);
 		attachSocketEventHandlers();
 	};
 
