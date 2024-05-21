@@ -25,6 +25,7 @@ resource "aws_subnet" "public" {
 
   vpc_id                  = aws_vpc.main.id
   cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)
+  availability_zone       = element(data.aws_availability_zones.available.names, count.index)
   map_public_ip_on_launch = true
 
   tags = {
@@ -103,6 +104,46 @@ data "aws_iam_role" "lab_role" {
   name = "LabRole"
 }
 
+data "aws_availability_zones" "available" {}
+
+resource "aws_lb" "main" {
+  name               = "main-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.ecs_sg.id]
+  subnets            = aws_subnet.public[*].id
+
+  enable_deletion_protection = false
+}
+
+resource "aws_lb_target_group" "backend_tg" {
+  name        = "backend-tg"
+  port        = 8080
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+
+  health_check {
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    matcher             = "200-299"
+  }
+}
+
+resource "aws_lb_listener" "frontend" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.backend_tg.arn
+  }
+}
+
 resource "aws_ecs_task_definition" "backend" {
   family                   = "backend-task"
   network_mode             = "awsvpc"
@@ -135,18 +176,16 @@ resource "aws_ecs_service" "backend" {
     assign_public_ip = true
   }
 
-  depends_on = [
-    aws_ecs_cluster.main
-  ]
-}
-
-resource "aws_ssm_parameter" "backend_ip" {
-  name  = "/backend/ip"
-  type  = "String"
-  value = "backend-ip-placeholder"
-  lifecycle {
-    ignore_changes = [value]
+  load_balancer {
+    target_group_arn = aws_lb_target_group.backend_tg.arn
+    container_name   = "backend"
+    container_port   = 8080
   }
+
+  depends_on = [
+    aws_ecs_cluster.main,
+    aws_lb_listener.frontend
+  ]
 }
 
 resource "aws_ecs_task_definition" "frontend" {
@@ -165,7 +204,7 @@ resource "aws_ecs_task_definition" "frontend" {
     environment = [
       {
         name  = "PUBLIC_BACKEND_URL"
-        value = aws_ssm_parameter.backend_ip.value
+        value = aws_lb.main.dns_name
       }
     ]
     portMappings = [{
@@ -192,7 +231,8 @@ resource "aws_ecs_service" "frontend" {
   ]
 }
 
-output "backend_ip" {
-  value     = aws_ssm_parameter.backend_ip.value
-  sensitive = true
+output "backend_url" {
+  value     = aws_lb.main.dns_name
+  sensitive = false
 }
+
