@@ -1,3 +1,6 @@
+N.B. I did the beanstalk implementation the previous lab. You can see it on the screenshots of the README:
+https://github.com/pwr-cloudprogramming/a5-louis-marceron
+
 # Louis Marceron - Fargate, Beanstalk, TicTacToe report
 
 Course: Cloud programming
@@ -30,4 +33,3 @@ What helped most in overcoming obstacles?
 
 Surprises?
 - Found Fargate to be a powerful tool for managing containerized applications, and the use of Load Balancers significantly streamlined the process of linking services.
-The architecture for this assignment involves deploying the frontend and backend as ECS services managed by Fargate. Both services are defined in task definitions, and a Load Balancer is set up to handle the traffic between the frontend and backend, ensuring seamless integration and automation.
