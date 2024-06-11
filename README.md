@@ -1,16 +1,33 @@
-## TODO
-- [x] Fix my terrible frontend docker file
-- [x] Only store the build files in the docker
-- [ ] Store the ws connection in a store to avoid creating a new connection 
-every time the component is created
-- [ ] In multiplayer mode, do the action in local and then send it to the server
-for less latency
-- [ ] Join a custom room by entering the room name or a link
-- [ ] Join a custom room with a QR code
-- [ ] Deploy the application on AWS
-- [ ] Send the least amount of data from the server
-- [ ] Notifications system
-- [ ] Send ID of to the player to deal with the case of two players with the 
-same name
-- [ ] Common folder for the server and the client for TicTacToe logic and API
-- [ ] Animations
+# Louis Marceron - Fargate, Beanstalk, TicTacToe report
+
+Course: Cloud programming
+Group: 3
+Date: 2024-06-9
+
+## Environment Architecture:
+
+Compute
+- ECS Fargate services running the frontend and backend applications
+- Load Balancer to manage traffic between frontend and backend
+
+Software
+- Frontend application running in Bun with the framework Svelte
+- Backend application running in Bun
+- Both applications are containerized with Docker
+
+Screenshots
+![image](https://github.com/pwr-cloudprogramming/a7-louis-marceron/assets/72874947/94940dc8-38e7-43a8-be70-c22ab6cf8346)
+
+Reflections
+- Understanding and implementing Fargate services for deploying containerized applications.
+
+What obstacles did you overcome?
+- Struggled to link the frontend and backend initially without a Load Balancer. Initially attempted to manually retrieve the backend IP and set it in the frontend environment variables, which was not automated.
+
+What helped most in overcoming obstacles?
+- Implementing a Load Balancer to automate the connection between frontend and backend.
+- Configuring Terraform to inject the backend IP into the frontend environment variables automatically.
+
+Surprises?
+- Found Fargate to be a powerful tool for managing containerized applications, and the use of Load Balancers significantly streamlined the process of linking services.
+The architecture for this assignment involves deploying the frontend and backend as ECS services managed by Fargate. Both services are defined in task definitions, and a Load Balancer is set up to handle the traffic between the frontend and backend, ensuring seamless integration and automation.
